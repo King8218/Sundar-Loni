@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="mr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>स्वच्छ लोनी, सुंदर लोनी</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; background: #f0f4f8; color: #1a202c; display: flex; flex-direction: column; overflow: hidden; }
+        #app { display: flex; flex-direction: column; height: 100vh; width: 100%; }
+
+        @keyframes blink { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.3; transform: scale(0.8); } }
+
+        .top-header { background: white; padding: 0.6rem 1.25rem; border-bottom: 2px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; z-index: 10; flex-shrink: 0; }
+        .header-left { display: flex; align-items: center; gap: 0.6rem; }
+        .header-left .logo-icon { background: #0d9488; color: white; width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
+        .header-left h1 { font-size: 1.2rem; font-weight: 800; margin: 0; color: #065f46; }
+        .header-left .sub { font-size: 0.65rem; color: #718096; display: block; margin-top: -2px; }
+        .header-right { display: flex; align-items: center; gap: 0.3rem; flex-wrap: wrap; }
+        .report-badge { background: #0d9488; color: white; padding: 0.3rem 0.8rem; border-radius: 50px; font-size: 0.75rem; font-weight: 700; display: flex; align-items: center; gap: 0.3rem; }
+        .filter-btn { background: white; border: 2px solid #e2e8f0; padding: 0.3rem 0.8rem; border-radius: 50px; font-weight: 600; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; gap: 0.3rem; transition: all 0.2s; }
+        .filter-btn:hover { border-color: #0d9488; background: #f0fdfa; }
+        .zone-btn { background: #3b82f6; color: white; border: none; padding: 0.3rem 0.8rem; border-radius: 50px; font-weight: 700; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; gap: 0.3rem; transition: all 0.2s; box-shadow: 0 2px 10px rgba(59,130,246,0.3); }
+        .zone-btn:hover { transform: scale(1.05); background: #2563eb; }
+
+        .hamburger-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #1a202c; padding: 0.2rem 0.4rem; border-radius: 8px; transition: background 0.2s; }
+        .hamburger-btn:hover { background: #f0f4f8; }
+        .hamburger-menu { display: none; position: absolute; top: 60px; right: 10px; background: white; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); border: 1px solid #e2e8f0; z-index: 1000; min-width: 180px; padding: 0.5rem 0; }
+        .hamburger-menu.active { display: block; }
+        .hamburger-menu button { display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 1.2rem; width: 100%; border: none; background: none; font-size: 0.9rem; font-weight: 600; color: #1a202c; cursor: pointer; transition: background 0.2s; font-family: inherit; }
+        .hamburger-menu button:hover { background: #f0fdf4; color: #0d9488; }
+        .hamburger-menu .about-item i { color: #8b5cf6; }
+        .hamburger-menu .home-item i { color: #0d9488; }
+
+        #map { flex: 1; width: 100%; min-height: 0; background: #e8ecf1; z-index: 1; }
+
+        .legend { position: absolute; bottom: 80px; left: 25px; background: white; padding: 0.6rem 1rem; border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); z-index: 1000; display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.75rem; font-weight: 500; border: 1px solid #e2e8f0; }
+        .legend-item { display: flex; align-items: center; gap: 0.4rem; }
+        .legend-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(0,0,0,0.1); flex-shrink: 0; animation: blink 1.2s ease-in-out infinite; }
+        .legend-dot.green { background: #22c55e; box-shadow: 0 0 12px #22c55e; }
+        .legend-dot.red { background: #ef4444; box-shadow: 0 0 12px #ef4444; }
+        .legend-dot.yellow { background: #eab308; box-shadow: 0 0 12px #eab308; animation-duration: 1.8s; }
+
+        .report-btn-bottom { position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%); background: #22c55e; color: white; border: none; padding: 0.8rem 2rem; border-radius: 60px; font-weight: 800; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.6rem; box-shadow: 0 8px 30px rgba(34,197,94,0.4); z-index: 1000; transition: all 0.3s ease; min-width: 220px; letter-spacing: 0.5px; }
+        .report-btn-bottom:hover { transform: translateX(-50%) scale(1.04); box-shadow: 0 12px 40px rgba(34,197,94,0.5); }
+        .report-btn-bottom i { font-size: 1.3rem; }
+
+        .custom-popup { max-width: 280px; }
+        .custom-popup img { width: 100%; border-radius: 6px; margin-bottom: 0.4rem; }
+        .custom-popup .popup-status { display: inline-block; padding: 0.15rem 0.6rem; border-radius: 50px; font-size: 0.65rem; font-weight: 700; }
+        .popup-status.resolved { background: #dcfce7; color: #16a34a; }
+        .popup-status.pending { background: #fef3c7; color: #d97706; }
+        .popup-status.in-progress { background: #dbeafe; color: #2563eb; }
+        .custom-popup .appeal { background: #f0fdf4; padding: 0.4rem; border-radius: 6px; font-size: 0.75rem; color: #065f46; border-left: 3px solid #0d9488; margin-top: 0.3rem; }
+        .resolve-btn { background: #22c55e; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.7rem; font-weight: 700; cursor: pointer; margin-top: 0.4rem; width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.3rem; transition: all 0.2s; z-index: 10; pointer-events: auto; }
+        .resolve-btn:hover { background: #16a34a; transform: scale(1.02); }
+
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 2000; justify-content: center; align-items: center; }
+        .modal-overlay.active { display: flex; }
+        .modal { background: white; border-radius: 16px; padding: 1.5rem; max-width: 420px; width: 90%; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3); animation: modalIn 0.3s ease; }
+        @keyframes modalIn { from { transform: scale(0.9) translateY(20px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
+        .modal h2 { font-size: 1.2rem; margin-bottom: 0.2rem; display: flex; align-items: center; gap: 0.5rem; }
+        .modal .sub { color: #718096; font-size: 0.8rem; margin-bottom: 1rem; }
+        .modal .form-group { margin-bottom: 0.8rem; }
+        .modal .form-group label { display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 0.2rem; }
+        .modal .form-group input, .modal .form-group textarea, .modal .form-group select { width: 100%; padding: 0.5rem 0.75rem; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 0.9rem; font-family: inherit; transition: border 0.2s; }
+        .modal .form-group input:focus, .modal .form-group textarea:focus, .modal .form-group select:focus { border-color: #0d9488; outline: none; }
+        .modal .form-group textarea { min-height: 60px; resize: vertical; }
+
+        .camera-options { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+        .camera-options button { flex: 1; min-width: 100px; padding: 0.6rem; border: 2px solid #e2e8f0; border-radius: 8px; background: white; font-weight: 600; font-size: 0.8rem; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 0.4rem; }
+        .camera-options button:hover { border-color: #0d9488; background: #f0fdfa; }
+        .camera-options button.camera-btn { background: #0d9488; color: white; border-color: #0d9488; }
+        .camera-options button.camera-btn:hover { background: #0f766e; }
+        .modal .preview-img { margin-top: 0.5rem; max-width: 100%; border-radius: 8px; max-height: 200px; display: none; }
+        .modal .preview-img.show { display: block; }
+        .modal .btn-row { display: flex; gap:
